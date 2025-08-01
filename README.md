@@ -9,7 +9,7 @@
 ## Chat SDK  reference codebase (use above version 1.0 of Expo AI Chatbot)
 
 Reference nextjs-ai-chatbot [README.md](./ai-chatbot/README.md)
----
+
 ## Next.js AI Chatbot reference codebase (use before version 1.0 of Expo AI Chatbot)
 
 Reference nextjs-ai-chatbot [README.md](./nextjs-ai-chatbot/README.md)
