@@ -51,7 +51,7 @@ const HomePage = () => {
   } = useChat({
     initialMessages: [],
     id: chatId?.id,
-    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat-mastra`,
+    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat`,
     body: {
       id: chatId?.id,
       modelId: "gpt-4o-mini",
