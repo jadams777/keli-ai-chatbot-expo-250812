@@ -51,9 +51,8 @@ const HomePage = () => {
   } = useChat({
     initialMessages: [],
     id: chatId?.id,
-    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat`,
+    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat-open`,
     body: {
-      id: chatId?.id,
       modelId: "gpt-4o-mini",
     },
     onFinish: () => {
