@@ -41,6 +41,7 @@ export function Chat({
     stop,
     reload,
   } = useChat({
+    api: `http://localhost:3000/api/chat-mastra`,
     id,
     body: { id, modelId: selectedModelId },
     initialMessages,

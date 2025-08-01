@@ -2,19 +2,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export async function fetchApi(
   endpoint: string,
-  options: { token: string; chatId?: string },
+  options: { token: string; chatId?: string; method?: string; body?: any },
 ) {
   const token = await AsyncStorage.getItem("session");
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_API_URL}/api/${endpoint}`,
+    `${process.env.EXPO_PUBLIC_API_URL}${endpoint.startsWith('/') ? endpoint : `/api/${endpoint}`}`,
     {
+      method: options.method || "GET",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      ...(options.chatId && {
+      ...(options.body && { body: JSON.stringify(options.body) }),
+      ...(options.chatId && !options.body && {
         body: JSON.stringify({ chatId: options.chatId }),
       }),
     },

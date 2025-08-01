@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { Pressable, type TextInput, View, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetch } from "expo/fetch";
-import { useChat } from "ai/react/dist/index";
+import { useChat } from "@ai-sdk/react";
 import { LottieLoader } from "@/components/lottie-loader";
 import { ChatInterface } from "@/components/chat-interface";
 import { ChatInput } from "@/components/ui/chat-input";
@@ -12,7 +12,7 @@ import { SuggestedActions } from "@/components/suggested-actions";
 import type { ScrollView as GHScrollView } from "react-native-gesture-handler";
 import { useStore } from "@/lib/globalStore";
 import { MessageCirclePlusIcon, Menu } from "lucide-react-native";
-import { Message } from "ai/react";
+import type { Message } from "@ai-sdk/react";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 type WeatherResult = {
@@ -50,9 +50,8 @@ const HomePage = () => {
     append,
   } = useChat({
     initialMessages: [],
-    key: chatId?.id,
     id: chatId?.id,
-    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat-open`,
+    api: `${process.env.EXPO_PUBLIC_API_URL}/api/chat-mastra`,
     body: {
       id: chatId?.id,
       modelId: "gpt-4o-mini",

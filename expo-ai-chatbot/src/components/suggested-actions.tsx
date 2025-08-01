@@ -11,7 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useStore } from "@/lib/globalStore";
 import { generateUUID } from "@/lib/utils";
-import type { Message, CreateMessage } from "ai";
+import type { Message, CreateMessage } from "@ai-sdk/react";
 
 interface SuggestedActionsProps {
   hasInput?: boolean;
