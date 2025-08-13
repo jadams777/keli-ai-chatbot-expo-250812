@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   useColorScheme as useDeviceColorScheme,
   Appearance,
@@ -29,7 +29,7 @@ export function ColorSchemeProvider({
   children,
 }: {
   children: React.ReactNode;
-}): JSX.Element {
+}): React.JSX.Element {
   const deviceColorScheme = useDeviceColorScheme();
   const nativewind = useTailwindColorScheme();
   const [colorScheme, setColorScheme] = useState<"dark" | "light">(

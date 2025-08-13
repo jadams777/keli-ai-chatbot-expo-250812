@@ -56,7 +56,7 @@ export default function RootLayout({
       }
       const colorTheme = theme === "dark" ? "dark" : "light";
       if (colorTheme !== colorScheme) {
-        setColorScheme(colorTheme);
+        await setColorScheme(colorTheme);
         // setAndroidNavigationBar(colorTheme);
         setIsColorSchemeLoaded(true);
         return;

@@ -9,25 +9,30 @@ import { WelcomeMessage } from "@/components/welcome-message";
 import React, { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { LottieLoader } from "@/components/lottie-loader";
-
-type ToolInvocation = {
-  toolName: string;
-  toolCallId: string;
-  state: string;
-  result?: any;
-};
-
-type Message = {
-  id: string;
-  role: "user" | "assistant" | "system" | "function" | "data" | "tool";
-  content: string;
-  toolInvocations?: ToolInvocation[];
-};
+import type { UIMessage } from "@ai-sdk/react";
 
 type ChatInterfaceProps = {
-  messages: Message[];
+  messages: UIMessage[];
   scrollViewRef: React.RefObject<ScrollView>;
   isLoading?: boolean;
+};
+
+// Helper function to get content from UIMessage parts array <mcreference link="https://v5.ai-sdk.dev/docs/migration-guides/migration-guide-5-0" index="1">1</mcreference>
+const getMessageContent = (message: UIMessage): string => {
+  return message.parts
+    .filter(part => part.type === 'text')
+    .map(part => part.text)
+    .join('');
+};
+
+// Helper function to get tool calls from UIMessage parts <mcreference link="https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-tool-usage" index="2">2</mcreference>
+const getToolCalls = (message: UIMessage) => {
+  return message.parts.filter(part => part.type === 'tool-call');
+};
+
+// Helper function to get tool results from UIMessage parts
+const getToolResults = (message: UIMessage) => {
+  return message.parts.filter(part => part.type === 'tool-result');
 };
 
 export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
@@ -41,41 +46,45 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
           {messages.length > 0
             ? messages.map((m, index) => (
                 <React.Fragment key={m.id}>
-                  {m.toolInvocations?.map((t) => {
-                    if (t.toolName === "getWeather") {
-                      if (t.state !== "result") {
-                        return (
-                          <View
-                            key={t.toolCallId}
-                            className={cn(
-                              "mt-4 max-w-[85%] rounded-2xl bg-muted/50 p-4",
-                            )}
-                          >
-                            <ActivityIndicator size="small" color="black" />
-                            <Text>Getting weather data...</Text>
-                          </View>
-                        );
-                      }
-                      if (t.state === "result") {
-                        return (
-                          <WeatherCard
-                            key={t.toolCallId}
-                            city={t.result.city || "Unknown"}
-                            temperature={t.result.current.temperature_2m}
-                            weatherCode={t.result.current.weathercode}
-                            humidity={t.result.current.relative_humidity_2m}
-                            wind={t.result.current.wind_speed_10m}
-                          />
-                        );
-                      }
+                  {/* Render tool calls (loading state) */}
+                  {getToolCalls(m).map((toolCall: any) => {
+                    if (toolCall.toolName === "getWeather") {
+                      return (
+                        <View
+                          key={toolCall.toolCallId}
+                          className={cn(
+                            "mt-4 max-w-[85%] rounded-2xl bg-muted/50 p-4",
+                          )}
+                        >
+                          <ActivityIndicator size="small" color="black" />
+                          <Text>Getting weather data...</Text>
+                        </View>
+                      );
                     }
                     return null;
-                  })}
+                  }).filter(Boolean)}
+                  
+                  {/* Render tool results */}
+                  {getToolResults(m).map((toolResult: any) => {
+                    if (toolResult.toolName === "getWeather" && toolResult.result) {
+                      return (
+                        <WeatherCard
+                          key={toolResult.toolCallId}
+                          city={toolResult.result.city || "Unknown"}
+                          temperature={toolResult.result.current?.temperature_2m || 0}
+                          weatherCode={toolResult.result.current?.weathercode || "0"}
+                          humidity={toolResult.result.current?.relative_humidity_2m || 0}
+                          wind={toolResult.result.current?.wind_speed_10m || 0}
+                        />
+                      );
+                    }
+                    return null;
+                  }).filter(Boolean)}
 
                   <View
                     className={`flex-row px-4 ${m.role === "user" ? "ml-auto max-w-[85%]" : "max-w-[95%] pl-0"} rounded-3xl ${m.role === "user" ? "bg-muted/50" : ""} `}
                   >
-                    {m.content.length > 0 && (
+                    {getMessageContent(m).length > 0 && (
                       <>
                         <View
                           className={
@@ -88,7 +97,7 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
                             {m.role === "user" ? "" : "🤖"}
                           </Text>
                         </View>
-                        <CustomMarkdown content={m.content} />
+                        <CustomMarkdown content={getMessageContent(m)} />
                       </>
                     )}
                   </View>

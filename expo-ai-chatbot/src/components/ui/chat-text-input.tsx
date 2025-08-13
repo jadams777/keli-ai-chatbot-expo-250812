@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 import { Slot } from "@radix-ui/react-slot";
 
 const ChatTextInput = React.forwardRef<
-  React.ElementRef<typeof TextInput>,
+  any,
   React.ComponentPropsWithoutRef<typeof TextInput> & {
     asChild?: boolean;
     noFocus?: boolean;
@@ -27,7 +27,7 @@ const ChatTextInput = React.forwardRef<
 
     return (
       <Comp
-        ref={ref}
+        ref={ref as any}
         autoFocus={autoFocus}
         className={cn(
           "native:min-h-10 native:text-md native:leading-[1.25] min-h-10 rounded-md bg-background px-4 text-base text-foreground file:border-0 file:bg-transparent file:font-medium placeholder:text-muted-foreground web:flex web:w-full web:py-2 lg:text-sm",
@@ -37,7 +37,7 @@ const ChatTextInput = React.forwardRef<
           className,
         )}
         placeholderClassName={cn("text-muted-foreground", placeholderClassName)}
-        {...props}
+        {...(props as any)}
       />
     );
   },

@@ -3,11 +3,19 @@ import { Platform } from "react-native";
 import { twMerge } from "tailwind-merge";
 import type {
   CoreAssistantMessage,
-  CoreMessage,
+  ModelMessage,
   CoreToolMessage,
-  Message,
-  ToolInvocation,
+  UIMessage,
 } from "ai";
+
+// Define ToolInvocation type for AI SDK v5 compatibility
+interface ToolInvocation {
+  state: 'call' | 'result';
+  toolCallId: string;
+  toolName: string;
+  args: any;
+  result?: any;
+}
 import type { Message as DBMessage, Document } from "@/lib/db/schema";
 
 export function cn(...inputs: ClassValue[]) {
@@ -71,13 +79,14 @@ function addToolMessageToChat({
   messages,
 }: {
   toolMessage: CoreToolMessage;
-  messages: Array<Message>;
-}): Array<Message> {
+  messages: Array<UIMessage>;
+}): Array<UIMessage> {
   return messages.map((message) => {
-    if (message.toolInvocations) {
+    const messageWithTools = message as UIMessage & { toolInvocations?: Array<ToolInvocation> };
+    if (messageWithTools.toolInvocations) {
       return {
         ...message,
-        toolInvocations: message.toolInvocations.map((toolInvocation) => {
+        toolInvocations: messageWithTools.toolInvocations.map((toolInvocation) => {
           const toolResult = toolMessage.content.find(
             (tool) => tool.toolCallId === toolInvocation.toolCallId,
           );
@@ -86,13 +95,13 @@ function addToolMessageToChat({
             return {
               ...toolInvocation,
               state: "result",
-              result: toolResult.result,
+              result: (toolResult as any).result || toolResult,
             };
           }
 
           return toolInvocation;
         }),
-      };
+      } as UIMessage;
     }
 
     return message;
@@ -101,8 +110,8 @@ function addToolMessageToChat({
 
 export function convertToUIMessages(
   messages: Array<DBMessage>,
-): Array<Message> {
-  return messages.reduce((chatMessages: Array<Message>, message) => {
+): Array<UIMessage> {
+  return messages.reduce((chatMessages: Array<UIMessage>, message) => {
     if (message.role === "tool") {
       return addToolMessageToChat({
         toolMessage: message as CoreToolMessage,
@@ -130,12 +139,14 @@ export function convertToUIMessages(
       }
     }
 
-    chatMessages.push({
+    const uiMessage: any = {
       id: message.id,
-      role: message.role as Message["role"],
+      role: message.role as UIMessage["role"],
       content: textContent,
-      toolInvocations,
-    });
+      parts: [{ type: "text", text: textContent }],
+      ...(toolInvocations.length > 0 && { toolInvocations }),
+    };
+    chatMessages.push(uiMessage as UIMessage);
 
     return chatMessages;
   }, []);
@@ -180,21 +191,22 @@ export function sanitizeResponseMessages(
   );
 }
 
-export function sanitizeUIMessages(messages: Array<Message>): Array<Message> {
+export function sanitizeUIMessages(messages: Array<UIMessage>): Array<UIMessage> {
   const messagesBySanitizedToolInvocations = messages.map((message) => {
     if (message.role !== "assistant") return message;
 
-    if (!message.toolInvocations) return message;
+    const messageWithTools = message as UIMessage & { toolInvocations?: Array<ToolInvocation> };
+    if (!messageWithTools.toolInvocations) return message;
 
     const toolResultIds: Array<string> = [];
 
-    for (const toolInvocation of message.toolInvocations) {
+    for (const toolInvocation of messageWithTools.toolInvocations) {
       if (toolInvocation.state === "result") {
         toolResultIds.push(toolInvocation.toolCallId);
       }
     }
 
-    const sanitizedToolInvocations = message.toolInvocations.filter(
+    const sanitizedToolInvocations = messageWithTools.toolInvocations.filter(
       (toolInvocation) =>
         toolInvocation.state === "result" ||
         toolResultIds.includes(toolInvocation.toolCallId),
@@ -203,17 +215,21 @@ export function sanitizeUIMessages(messages: Array<Message>): Array<Message> {
     return {
       ...message,
       toolInvocations: sanitizedToolInvocations,
-    };
+    } as UIMessage;
   });
 
   return messagesBySanitizedToolInvocations.filter(
-    (message) =>
-      message.content.length > 0 ||
-      (message.toolInvocations && message.toolInvocations.length > 0),
+    (message) => {
+      const messageWithTools = message as UIMessage & { toolInvocations?: Array<ToolInvocation>; content?: string };
+      return (
+        (messageWithTools.content && messageWithTools.content.length > 0) ||
+        (messageWithTools.toolInvocations && messageWithTools.toolInvocations.length > 0)
+      );
+    }
   );
 }
 
-export function getMostRecentUserMessage(messages: Array<CoreMessage>) {
+export function getMostRecentUserMessage(messages: Array<ModelMessage>) {
   const userMessages = messages.filter((message) => message.role === "user");
   return userMessages.at(-1);
 }
@@ -228,12 +244,12 @@ export function getDocumentTimestampByIndex(
   return documents[index].createdAt;
 }
 
-export function getMessageIdFromAnnotations(message: Message) {
-  if (!message.annotations) return message.id;
+export function getMessageIdFromAnnotations(message: UIMessage) {
+  const messageWithAnnotations = message as UIMessage & { annotations?: Array<any> };
+  if (!messageWithAnnotations.annotations) return message.id;
 
-  const [annotation] = message.annotations;
+  const [annotation] = messageWithAnnotations.annotations;
   if (!annotation) return message.id;
 
-  // @ts-expect-error messageIdFromServer is not defined in MessageAnnotation
-  return annotation.messageIdFromServer;
+  return annotation.messageIdFromServer || message.id;
 }

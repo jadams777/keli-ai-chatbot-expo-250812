@@ -11,19 +11,24 @@ import Animated, {
 } from "react-native-reanimated";
 import { useStore } from "@/lib/globalStore";
 import { generateUUID } from "@/lib/utils";
-import type { Message, CreateMessage } from "@ai-sdk/react";
+// Define a message type compatible with AI SDK v5
+type SimpleMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
+  parts?: Array<{ type: string; text: string }>;
+};
 
 interface SuggestedActionsProps {
   hasInput?: boolean;
-  append: (
-    message: Message | CreateMessage,
+  sendMessage: (
+    message: any,
     chatRequestOptions?: { body?: object },
-  ) => Promise<string | null | undefined>;
+  ) => Promise<any>;
 }
 
 export function SuggestedActions({
   hasInput = false,
-  append,
+  sendMessage,
 }: SuggestedActionsProps) {
   const { selectedImageUris, setChatId } = useStore();
   const { width } = useWindowDimensions();
@@ -48,8 +53,8 @@ export function SuggestedActions({
     const newChatId = generateUUID();
     setChatId({ id: newChatId, from: "newChat" });
 
-    // Send the initial message using append
-    await append(
+    // Send the initial message using sendMessage
+    await sendMessage(
       {
         role: "user",
         content: action,

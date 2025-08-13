@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   useColorScheme as useDeviceColorScheme,
   Appearance,
@@ -21,11 +21,21 @@ export function ColorSchemeProvider({
   children,
 }: {
   children: React.ReactNode;
-}): JSX.Element {
+}): React.JSX.Element {
   const deviceColorScheme = useDeviceColorScheme();
-  const [colorScheme, setColorScheme] = useState<"dark" | "light">(
-    getPersistedColorScheme() ?? deviceColorScheme
-  );
+  const [colorScheme, setColorScheme] = useState<"dark" | "light">("light");
+
+  useEffect(() => {
+    const loadPersistedScheme = async () => {
+      const persistedScheme = await getPersistedColorScheme();
+      if (persistedScheme) {
+        setColorScheme(persistedScheme);
+      } else if (deviceColorScheme) {
+        setColorScheme(deviceColorScheme);
+      }
+    };
+    loadPersistedScheme();
+  }, [deviceColorScheme]);
   const changeTheme = useCallback((newColorScheme: ColorSchemeName) => {
     if (!newColorScheme) return;
     persistColorScheme(newColorScheme);

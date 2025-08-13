@@ -63,13 +63,18 @@ const rules = {
       </Code>
     );
   },
-  list_item: (node, children) => <Li className="py-1">{children}</Li>,
-  ordered_list: (node, children) => (
-    <Ol className="ml-4 list-outside list-decimal">{children}</Ol>
-  ),
-  unordered_list: (node, children) => (
-    <Ul className="ml-4 list-outside list-decimal">{children}</Ul>
-  ),
+  list_item: (node, children, parent, styles, inheritedStyles, defaultRenderer) => {
+    const key = node.key || node.index || `li-${JSON.stringify(node).slice(0, 20)}`;
+    return <Li key={key} className="py-1">{children}</Li>;
+  },
+  ordered_list: (node, children, parent, styles, inheritedStyles, defaultRenderer) => {
+    const key = node.key || node.index || `ol-${JSON.stringify(node).slice(0, 20)}`;
+    return <Ol key={key} className="ml-4 list-outside list-decimal">{children}</Ol>;
+  },
+  unordered_list: (node, children, parent, styles, inheritedStyles, defaultRenderer) => {
+    const key = node.key || node.index || `ul-${JSON.stringify(node).slice(0, 20)}`;
+    return <Ul key={key} className="ml-4 list-outside list-decimal">{children}</Ul>;
+  },
   strong: (node, children) => (
     <Strong className="font-semibold">{children}</Strong>
   ),
@@ -92,5 +97,19 @@ const rules = {
 };
 
 export function CustomMarkdown({ content }) {
-  return <Markdown rules={rules}>{content}</Markdown>;
+  // Add a unique key based on content to help React identify the component
+  const contentKey = content ? content.slice(0, 50).replace(/\s+/g, '-') : 'empty';
+
+  return (
+    <Markdown 
+      key={contentKey}
+      rules={rules}
+      style={{
+        body: { margin: 0, padding: 0 },
+        paragraph: { margin: 0, padding: 0 },
+      }}
+    >
+      {content}
+    </Markdown>
+  );
 }

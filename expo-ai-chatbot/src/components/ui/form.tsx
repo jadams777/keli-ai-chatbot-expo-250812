@@ -72,7 +72,7 @@ const FormItemContext = React.createContext<FormItemContextValue>(
 );
 
 const FormItem = React.forwardRef<
-  View,
+  any,
   React.ComponentPropsWithoutRef<typeof View>
 >(({ className, ...props }, ref) => {
   const id = React.useId();
@@ -95,7 +95,7 @@ const FormLabel = React.forwardRef<
     <Label
       ref={ref}
       className={cn(error && "text-red-400", className)}
-      nativeID={formItemId}
+      htmlFor={formItemId}
       {...props}
     />
   );

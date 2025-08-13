@@ -63,13 +63,12 @@ const ImageItem = ({ uri, onRemove }: ImageItemProps) => {
         }}
         contentFit="cover"
         onLoadEnd={() => setTimeout(() => setIsLoading(false), 2000)}
-      >
-        {isLoading && (
-          <Animated.View className="h-[55px] w-[55px] items-center justify-center rounded-md bg-gray-300 dark:bg-gray-600">
-            <ActivityIndicator size="small" color="white" />
-          </Animated.View>
-        )}
-      </Image>
+      />
+      {isLoading && (
+        <Animated.View className="absolute inset-0 h-[55px] w-[55px] items-center justify-center rounded-md bg-gray-300 dark:bg-gray-600">
+          <ActivityIndicator size="small" color="white" />
+        </Animated.View>
+      )}
       <Pressable
         onPress={() => onRemove(uri)}
         className="absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full bg-gray-200"
@@ -114,7 +113,7 @@ const SelectedImages = ({ uris, onRemove }: SelectedImagesProps) => {
   );
 };
 
-export const ChatInput = forwardRef<TextInput, Props>(
+export const ChatInput = forwardRef<any, Props>(
   (
     { input, onChangeText, onSubmit, scrollViewRef, focusOnMount = false },
     ref,
