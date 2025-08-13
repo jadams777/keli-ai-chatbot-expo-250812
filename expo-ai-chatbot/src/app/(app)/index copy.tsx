@@ -3,7 +3,7 @@ import { Redirect, Stack, useNavigation } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, type TextInput, View, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { streamText } from "ai";
+import { generateText } from "ai";
 import { Platform } from "react-native";
 
 // Platform-specific Apple provider
@@ -61,7 +61,7 @@ const HomePage = () => {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Custom sendMessage function using Apple Foundation Model with streaming
+  // Custom sendMessage function using Apple Foundation Model
   const sendMessage = useCallback(async ({ text }: { text: string }) => {
     if (!text.trim()) return;
 
@@ -78,131 +78,50 @@ const HomePage = () => {
     setInput('');
     setIsLoading(true);
 
-    // Create assistant message immediately for streaming updates
-    const assistantMessageId = generateUUID();
-    const initialAssistantMessage = {
-      id: assistantMessageId,
-      role: 'assistant' as const,
-      content: '',
-      parts: [{ type: 'text' as const, text: '' }],
-      createdAt: new Date()
-    };
-    
-    setMessages(prev => [...prev, initialAssistantMessage]);
-
     try {
+      let result;
+      
       if (Platform.OS === 'ios') {
         // Load Apple provider if not already loaded
         await loadAppleProvider();
         
         if (apple) {
-          // Use Apple Foundation Model on iOS with streaming
-          console.log('🚀 Starting streamText call with Apple Foundation Model');
-          const { textStream } = streamText({
+          // Use Apple Foundation Model on iOS
+          result = await generateText({
             model: apple(),
             prompt: text,
           });
-          console.log('✅ textStream created successfully:', textStream);
-
-          let streamedContent = '';
-          console.log('🔄 Starting to iterate through textStream');
-          for await (const textPart of textStream) {
-            console.log('📝 Received textPart:', textPart);
-            console.log('📝 textPart type:', typeof textPart);
-            
-            // Handle Snapshot objects, Snapshot strings, or plain strings
-            let textContent = '';
-            if (typeof textPart === 'object' && textPart?.content) {
-              // Handle actual Snapshot objects
-              textContent = textPart.content;
-            } else if (typeof textPart === 'string' && textPart.startsWith('Snapshot(')) {
-              // Handle Snapshot string format: 'Snapshot(content: "text", rawContent: "text")'
-              console.log('🔍 Raw Snapshot string:', JSON.stringify(textPart));
-              
-              // Try to extract content using multiple approaches
-              let contentMatch = textPart.match(/content: "([^"]*)"/); 
-              if (!contentMatch) {
-                contentMatch = textPart.match(/content: '([^']*)'/); 
-              }
-              if (!contentMatch) {
-                // Handle escaped quotes
-                contentMatch = textPart.match(/content: \\"([^\\"]*)\\"/); 
-              }
-              if (!contentMatch) {
-                // Try a more flexible approach - find text between first quote after 'content:' and next quote
-                const contentIndex = textPart.indexOf('content:');
-                if (contentIndex !== -1) {
-                  const afterContent = textPart.substring(contentIndex + 8); // 'content:'.length
-                  const firstQuote = afterContent.indexOf('"');
-                  if (firstQuote !== -1) {
-                    const secondQuote = afterContent.indexOf('"', firstQuote + 1);
-                    if (secondQuote !== -1) {
-                      contentMatch = [null, afterContent.substring(firstQuote + 1, secondQuote)];
-                    }
-                  }
-                }
-              }
-              
-              console.log('🔍 Regex match result:', contentMatch);
-              textContent = contentMatch ? contentMatch[1].trim() : textPart;
-            } else {
-              // Handle plain strings
-              textContent = textPart;
-            }
-            
-            console.log('✨ Parsed textContent:', textContent);
-            streamedContent += textContent;
-            
-            // Update the assistant message with streamed content
-            setMessages(prev => prev.map(msg => 
-              msg.id === assistantMessageId 
-                ? {
-                    ...msg,
-                    content: streamedContent,
-                    parts: [{ type: 'text' as const, text: streamedContent }]
-                  }
-                : msg
-            ));
-          }
-          console.log('🎉 Streaming completed successfully');
         } else {
-          // Fallback message for unavailable Apple model
-          const fallbackText = 'Apple Foundation Model is not available. Please ensure you have Apple Intelligence enabled on your iOS device.';
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? {
-                  ...msg,
-                  content: fallbackText,
-                  parts: [{ type: 'text' as const, text: fallbackText }]
-                }
-              : msg
-          ));
+          result = {
+            text: 'Apple Foundation Model is not available. Please ensure you have Apple Intelligence enabled on your iOS device.'
+          };
         }
       } else {
         // Fallback for web/Android - show platform message
-        const fallbackText = `Apple Foundation Model is only available on iOS devices with Apple Intelligence enabled. Current platform: ${Platform.OS}. Please use an iOS device to access the Apple Foundation Model.`;
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? {
-                ...msg,
-                content: fallbackText,
-                parts: [{ type: 'text' as const, text: fallbackText }]
-              }
-            : msg
-        ));
+        result = {
+          text: `Apple Foundation Model is only available on iOS devices with Apple Intelligence enabled. Current platform: ${Platform.OS}. Please use an iOS device to access the Apple Foundation Model.`
+        };
       }
+      
+      const assistantMessage = {
+        id: generateUUID(),
+        role: 'assistant' as const,
+        content: result.text,
+        parts: [{ type: 'text' as const, text: result.text }],
+        createdAt: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error generating response:', error);
-      const errorText = 'Sorry, I encountered an error while processing your message. Please ensure you\'re using an iOS device with Apple Intelligence enabled.';
-      setMessages(prev => prev.map(msg => 
-        msg.id === assistantMessageId 
-          ? {
-              ...msg,
-              content: errorText,
-              parts: [{ type: 'text' as const, text: errorText }]
-            }
-          : msg
-      ));
+      const errorMessage = {
+        id: generateUUID(),
+        role: 'assistant' as const,
+        content: 'Sorry, I encountered an error while processing your message. Please ensure you\'re using an iOS device with Apple Intelligence enabled.',
+        parts: [{ type: 'text' as const, text: 'Sorry, I encountered an error while processing your message. Please ensure you\'re using an iOS device with Apple Intelligence enabled.' }],
+        createdAt: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
       // Scroll to end after message is added

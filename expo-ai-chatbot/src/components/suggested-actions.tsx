@@ -86,6 +86,8 @@ export function SuggestedActions({
     },
   ];
 
+  console.log('SuggestedActions: rendering actions', { actionsCount: actions.length });
+  
   return (
     <Animated.View style={animatedStyle}>
       <ScrollAdapt withSnap itemWidth={cardWidth}>

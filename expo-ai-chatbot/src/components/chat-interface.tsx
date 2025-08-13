@@ -44,14 +44,19 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
         <ScrollView ref={ref} className="flex-1 space-y-4 p-4">
           {!messages.length && <WelcomeMessage />}
           {messages.length > 0
-            ? messages.map((m, index) => (
-                <React.Fragment key={m.id}>
-                  {/* Render tool calls (loading state) */}
-                  {getToolCalls(m).map((toolCall: any) => {
+            ? (() => {
+                console.log('ChatInterface: rendering messages', messages.length);
+                return messages.map((m, index) => (
+                  <React.Fragment key={m.id}>
+                    {/* Render tool calls (loading state) */}
+                    {(() => {
+                      const toolCalls = getToolCalls(m);
+                      console.log('ChatInterface: rendering tool calls for message', m.id, toolCalls.length);
+                      return toolCalls.map((toolCall: any, index: number) => {
                     if (toolCall.toolName === "getWeather") {
                       return (
                         <View
-                          key={toolCall.toolCallId}
+                          key={toolCall.toolCallId || `tool-call-${m.id}-${index}`}
                           className={cn(
                             "mt-4 max-w-[85%] rounded-2xl bg-muted/50 p-4",
                           )}
@@ -61,15 +66,19 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
                         </View>
                       );
                     }
-                    return null;
-                  }).filter(Boolean)}
+                        return null;
+                      }).filter(Boolean);
+                    })()}
                   
-                  {/* Render tool results */}
-                  {getToolResults(m).map((toolResult: any) => {
+                    {/* Render tool results */}
+                    {(() => {
+                      const toolResults = getToolResults(m);
+                      console.log('ChatInterface: rendering tool results for message', m.id, toolResults.length);
+                      return toolResults.map((toolResult: any, index: number) => {
                     if (toolResult.toolName === "getWeather" && toolResult.result) {
                       return (
                         <WeatherCard
-                          key={toolResult.toolCallId}
+                          key={toolResult.toolCallId || `tool-result-${m.id}-${index}`}
                           city={toolResult.result.city || "Unknown"}
                           temperature={toolResult.result.current?.temperature_2m || 0}
                           weatherCode={toolResult.result.current?.weathercode || "0"}
@@ -78,8 +87,9 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
                         />
                       );
                     }
-                    return null;
-                  }).filter(Boolean)}
+                        return null;
+                      }).filter(Boolean);
+                    })()}
 
                   <View
                     className={`flex-row px-4 ${m.role === "user" ? "ml-auto max-w-[85%]" : "max-w-[95%] pl-0"} rounded-3xl ${m.role === "user" ? "bg-muted/50" : ""} `}
@@ -97,7 +107,10 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
                             {m.role === "user" ? "" : "🤖"}
                           </Text>
                         </View>
-                        <CustomMarkdown content={getMessageContent(m)} />
+                        <CustomMarkdown 
+                          key={`markdown-${m.id}-${getMessageContent(m).slice(0, 20)}`}
+                          content={getMessageContent(m)} 
+                        />
                       </>
                     )}
                   </View>
@@ -117,8 +130,9 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
                         </View>
                       </View>
                     )}
-                </React.Fragment>
-              ))
+                  </React.Fragment>
+                ));
+              })()
             : null}
         </ScrollView>
       </View>

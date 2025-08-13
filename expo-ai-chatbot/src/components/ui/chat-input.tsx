@@ -104,9 +104,12 @@ const SelectedImages = ({ uris, onRemove }: SelectedImagesProps) => {
         style={{ minHeight: 65 }}
       >
         <View className="flex-row gap-4">
-          {uris.map((uri) => (
-            <ImageItem key={uri} uri={uri} onRemove={onRemove} />
-          ))}
+          {(() => {
+            console.log('ChatInput: rendering selected images', { urisCount: uris.length });
+            return uris.map((uri) => (
+              <ImageItem key={uri} uri={uri} onRemove={onRemove} />
+            ));
+          })()}
         </View>
       </ScrollView>
     </Animated.View>
